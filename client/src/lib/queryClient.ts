@@ -34,18 +34,28 @@ export const getQueryFn: <T>(options: {
     // Handle additional path parameters
     if (queryKey.length > 1 && queryKey[1] !== undefined) {
       url = `${url}/${queryKey[1]}`;
+      console.log('Fetching material detail:', url);
+    } else {
+      console.log('Fetching all materials:', url);
     }
     
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+      });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      const data = await res.json();
+      console.log('API response data:', data);
+      return data;
+    } catch (error) {
+      console.error('API request error:', error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

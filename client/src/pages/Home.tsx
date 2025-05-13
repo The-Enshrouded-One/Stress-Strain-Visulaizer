@@ -18,6 +18,14 @@ export default function Home() {
     queryKey: ['/api/materials'],
   });
 
+  // Effect to set initial material
+  useEffect(() => {
+    if (!selectedMaterial && materials.length > 0) {
+      console.log('Setting initial material:', materials[0]);
+      setSelectedMaterial(materials[0]);
+    }
+  }, [materials, selectedMaterial]);
+
   const { 
     data: materialDetails,
     isLoading: isMaterialDetailsLoading,
@@ -28,14 +36,19 @@ export default function Home() {
     queryFn: getQueryFn<Material>({ on401: "throw" }),
   });
 
-  // Set the first material as selected on initial load
+  // Log data for debugging
   useEffect(() => {
-    if (!selectedMaterial && materials && materials.length > 0) {
-      setSelectedMaterial(materials[0]);
+    if (materials.length > 0) {
+      console.log('Materials loaded:', materials);
     }
-  }, [materials, selectedMaterial]);
+    if (materialDetails) {
+      console.log('Material details loaded:', materialDetails);
+    }
+  }, [materials, materialDetails]);
 
+  // Handle material selection
   const handleSelectMaterial = (material: Material) => {
+    console.log('Material selected:', material);
     setSelectedMaterial(material);
   };
 
@@ -73,7 +86,7 @@ export default function Home() {
         <div className="lg:col-span-2">
           <StressStrainChart 
             material={materialDetails ? materialDetails : null}
-            isLoading={isLoading || !materialDetails}
+            isLoading={isMaterialDetailsLoading}
           />
         </div>
       </div>
