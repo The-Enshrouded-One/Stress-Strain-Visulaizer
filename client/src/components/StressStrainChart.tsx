@@ -142,83 +142,72 @@ export default function StressStrainChart({ material, isLoading }: StressStrainC
               />
               <Legend />
               
-              {/* Reference areas for regions */}
-              {regions && regions.map((region, index) => {
-                console.log('Processing region:', region.name, 'for material:', material.name);
-                console.log('Available key points:', keyPoints);
-                
-                // Define region bounds more accurately based on material type
-                let startX = 0;
-                let endX = 0;
-                
-                // Get all key points for better debugging
-                const elasticLimit = keyPoints?.find(p => p.label === "Elastic Limit");
-                const yieldPoint = keyPoints?.find(p => p.label === "Yield Point");
-                const ultimate = keyPoints?.find(p => p.label === "Ultimate");
-                
-                console.log('Elastic Limit point:', elasticLimit);
-                console.log('Yield Point:', yieldPoint);
-                console.log('Ultimate point:', ultimate);
-                
-                if (region.name === "Elastic Region") {
-                  startX = 0;
-                  // End at elastic limit
-                  endX = elasticLimit ? elasticLimit.x : 0.1;
-                  console.log('Elastic Region bounds:', startX, 'to', endX);
-                } else if (region.name === "Plastic Region") {
-                  // Start from elastic limit
-                  startX = elasticLimit ? elasticLimit.x : 0.1;
-                  // End at ultimate
-                  endX = ultimate ? ultimate.x : maxStrain * 0.7;
-                  console.log('Plastic Region bounds:', startX, 'to', endX);
-                } else if (region.name === "Strain Hardening") {
-                  // Start from yield point
-                  startX = yieldPoint ? yieldPoint.x : (elasticLimit ? elasticLimit.x * 1.2 : 0.2);
-                  // End at ultimate
-                  endX = ultimate ? ultimate.x : maxStrain * 0.7;
-                  console.log('Strain Hardening bounds:', startX, 'to', endX);
-                } else {
-                  // Fallback with simple calculation
-                  startX = index === 0 ? 0 : maxStrain * 0.25 * index;
-                  endX = maxStrain * 0.25 * (index + 1);
-                  console.log('Fallback region bounds:', startX, 'to', endX);
-                }
-                
-                return (
-                  <ReferenceArea 
-                    key={region.name}
-                    x1={startX} 
-                    x2={endX}
-                    y1={0}
-                    y2={maxStress}
-                    fill={
-                      region.name === "Elastic Region" ? "rgba(34, 197, 94, 0.2)" :
-                      region.name === "Plastic Region" ? "rgba(234, 179, 8, 0.2)" :
-                      region.name === "Strain Hardening" ? "rgba(239, 68, 68, 0.2)" :
-                      region.color
-                    }
-                    fillOpacity={0.5}
-                    strokeWidth={1.5}
-                    stroke={
-                      region.name === "Elastic Region" ? "rgba(34, 197, 94, 0.8)" :
-                      region.name === "Plastic Region" ? "rgba(234, 179, 8, 0.8)" :
-                      region.name === "Strain Hardening" ? "rgba(239, 68, 68, 0.8)" :
-                      region.color
-                    }
-                    label={{
-                      value: region.name,
-                      position: region.name === "Elastic Region" ? 'insideTopLeft' : 
-                               region.name === "Plastic Region" ? 'insideTop' : 'insideTopRight',
-                      fill: region.name === "Elastic Region" ? "rgba(34, 197, 94, 1)" :
-                             region.name === "Plastic Region" ? "rgba(234, 179, 8, 1)" :
-                             "rgba(239, 68, 68, 1)",
-                      fontSize: 13,
-                      fontWeight: 'bold',
-                      offset: 15
-                    }}
-                  />
-                );
-              })}
+              {/* Direct hardcoded regions instead of relying on the data */}
+              {/* Elastic Region */}
+              <ReferenceArea 
+                key="Elastic-Region"
+                x1={0} 
+                x2={keyPoints?.find(p => p.label === "Elastic Limit")?.x || 0.1}
+                y1={0}
+                y2={maxStress}
+                fill="rgba(34, 197, 94, 0.25)"
+                fillOpacity={1}
+                isFront={true}
+                strokeWidth={2}
+                stroke="rgba(34, 197, 94, 0.9)"
+                label={{
+                  value: "Elastic Region",
+                  position: 'insideTopLeft',
+                  fill: "rgba(34, 197, 94, 1)",
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  offset: 10
+                }}
+              />
+              
+              {/* Plastic Region */}
+              <ReferenceArea 
+                key="Plastic-Region"
+                x1={keyPoints?.find(p => p.label === "Elastic Limit")?.x || 0.1} 
+                x2={keyPoints?.find(p => p.label === "Ultimate")?.x || maxStrain * 0.7}
+                y1={0}
+                y2={maxStress}
+                fill="rgba(234, 179, 8, 0.25)"
+                fillOpacity={1}
+                isFront={true}
+                strokeWidth={2}
+                stroke="rgba(234, 179, 8, 0.9)"
+                label={{
+                  value: "Plastic Region",
+                  position: 'insideTop',
+                  fill: "rgba(234, 179, 8, 1)",
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  offset: 10
+                }}
+              />
+              
+              {/* Strain Hardening Region */}
+              <ReferenceArea 
+                key="Strain-Hardening"
+                x1={keyPoints?.find(p => p.label === "Yield Point")?.x || 0.2} 
+                x2={keyPoints?.find(p => p.label === "Ultimate")?.x || maxStrain * 0.7}
+                y1={0}
+                y2={maxStress}
+                fill="rgba(239, 68, 68, 0.25)"
+                fillOpacity={1}
+                isFront={true}
+                strokeWidth={2}
+                stroke="rgba(239, 68, 68, 0.9)"
+                label={{
+                  value: "Strain Hardening",
+                  position: 'insideTopRight',
+                  fill: "rgba(239, 68, 68, 1)",
+                  fontSize: 14,
+                  fontWeight: 'bold',
+                  offset: 10
+                }}
+              />
               
               {/* The curve line with much slower animation */}
               <Line 
@@ -226,11 +215,12 @@ export default function StressStrainChart({ material, isLoading }: StressStrainC
                 dataKey="y" 
                 name={material.name}
                 stroke={color} 
-                strokeWidth={3}
+                strokeWidth={4}
                 dot={false}
                 isAnimationActive={true}
                 animationDuration={4500}
                 animationEasing="ease-in-out"
+                z={1000}
                 activeDot={{ 
                   r: 8, 
                   fill: color,
