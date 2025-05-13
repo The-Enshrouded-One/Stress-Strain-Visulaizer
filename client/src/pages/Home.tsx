@@ -78,14 +78,14 @@ export default function Home() {
           />
           
           <MaterialProperties 
-            material={materialDetails as Material | null}
-            isLoading={isMaterialDetailsLoading}
+            material={(materialDetails as Material | null) || selectedMaterial}
+            isLoading={isLoading}
           />
         </div>
 
         <div className="lg:col-span-2">
           <StressStrainChart 
-            material={materialDetails as Material | null}
+            material={materialDetails ? materialDetails : null}
             isLoading={isMaterialDetailsLoading}
           />
         </div>
