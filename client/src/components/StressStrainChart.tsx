@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceDot,
   ReferenceArea,
+  ReferenceLine,
   Legend
 } from "recharts";
 import { type Material } from "@/lib/materialData";
@@ -143,9 +144,34 @@ export default function StressStrainChart({ material, isLoading }: StressStrainC
               
               {/* Reference areas for regions */}
               {regions && regions.map((region, index) => {
-                // Simplified implementation - in a real app we would calculate proper region bounds
-                const startX = index === 0 ? 0 : keyPoints?.[index - 1]?.x || 0;
-                const endX = keyPoints?.[index]?.x || maxStrain;
+                // Define region bounds more accurately based on material type
+                let startX = 0;
+                let endX = 0;
+                
+                if (region.name === "Elastic Region") {
+                  startX = 0;
+                  // Find elastic limit key point
+                  const elasticLimit = keyPoints?.find(p => p.label === "Elastic Limit");
+                  endX = elasticLimit ? elasticLimit.x : (keyPoints?.[0]?.x || maxStrain * 0.1);
+                } else if (region.name === "Plastic Region") {
+                  // Start from elastic limit
+                  const elasticLimit = keyPoints?.find(p => p.label === "Elastic Limit");
+                  startX = elasticLimit ? elasticLimit.x : (keyPoints?.[0]?.x || 0);
+                  // End at ultimate strength
+                  const ultimate = keyPoints?.find(p => p.label === "Ultimate");
+                  endX = ultimate ? ultimate.x : (keyPoints?.[2]?.x || maxStrain * 0.8);
+                } else if (region.name === "Strain Hardening") {
+                  // Start from yield point
+                  const yieldPoint = keyPoints?.find(p => p.label === "Yield Point");
+                  startX = yieldPoint ? yieldPoint.x : (keyPoints?.[1]?.x || 0);
+                  // End at ultimate strength
+                  const ultimate = keyPoints?.find(p => p.label === "Ultimate");
+                  endX = ultimate ? ultimate.x : (keyPoints?.[2]?.x || maxStrain * 0.8);
+                } else {
+                  // Fallback to index-based calculation
+                  startX = index === 0 ? 0 : keyPoints?.[index - 1]?.x || 0;
+                  endX = keyPoints?.[index]?.x || maxStrain;
+                }
                 
                 return (
                   <ReferenceArea 
@@ -155,33 +181,90 @@ export default function StressStrainChart({ material, isLoading }: StressStrainC
                     y1={0}
                     y2={maxStress}
                     fill={region.color}
-                    fillOpacity={0.3}
+                    fillOpacity={0.15}
+                    strokeWidth={1}
+                    stroke={region.color.replace('0.1', '0.5')}
+                    label={{
+                      value: region.name,
+                      position: 'insideTopLeft',
+                      fill: '#333',
+                      fontSize: 12,
+                      fontWeight: 'bold',
+                      offset: 10
+                    }}
                   />
                 );
               })}
               
-              {/* The curve line */}
+              {/* The curve line with slower animation */}
               <Line 
                 type="monotone" 
                 dataKey="y" 
                 name={material.name}
                 stroke={color} 
-                strokeWidth={2.5}
+                strokeWidth={3}
                 dot={false}
-                activeDot={{ r: 6, fill: color }}
+                isAnimationActive={true}
+                animationDuration={1500}
+                animationEasing="ease-in-out"
+                activeDot={{ 
+                  r: 8, 
+                  fill: color,
+                  stroke: '#fff',
+                  strokeWidth: 2,
+                  onMouseOver: (props: any) => console.log('Active point:', props)
+                }}
               />
               
-              {/* Key reference points */}
+              {/* Key reference points with labels */}
               {keyPoints && keyPoints.map((point) => (
                 <ReferenceDot
                   key={point.label}
                   x={point.x}
                   y={point.y}
-                  r={4}
-                  fill={color}
-                  stroke="none"
+                  r={6}
+                  fill={
+                    point.label === "Elastic Limit" ? "#3B82F6" : 
+                    point.label === "Yield Point" ? "#F59E0B" : 
+                    point.label === "Ultimate" ? "#EF4444" : color
+                  }
+                  stroke="#fff"
+                  strokeWidth={2}
+                  isFront={true}
+                  label={{
+                    value: point.label,
+                    position: 'top',
+                    fill: '#333',
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    offset: 15
+                  }}
                 />
               ))}
+              
+              {/* Visualize the key points more prominently */}
+              {keyPoints && keyPoints.map((point) => {
+                const pointColor = 
+                  point.label === "Elastic Limit" ? "#3B82F6" : 
+                  point.label === "Yield Point" ? "#F59E0B" : 
+                  point.label === "Ultimate" ? "#EF4444" : color;
+                
+                return (
+                  <ReferenceLine
+                    key={`line-${point.label}`}
+                    x={point.x}
+                    stroke={pointColor}
+                    strokeDasharray="3 3"
+                    strokeWidth={1.5}
+                    label={{
+                      value: `${point.x.toFixed(2)}%`,
+                      position: 'bottom',
+                      fill: '#666',
+                      fontSize: 10
+                    }}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
