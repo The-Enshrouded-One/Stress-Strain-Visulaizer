@@ -5,15 +5,16 @@ import MaterialProperties from "@/components/MaterialProperties";
 import StressStrainChart from "@/components/StressStrainChart";
 import InfoSection from "@/components/InfoSection";
 import { type Material } from "@/lib/materialData";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function Home() {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
   const { 
-    data: materials = [], 
+    data: materials = [] as Material[], 
     isLoading: isMaterialsLoading,
     isError: isMaterialsError
-  } = useQuery({
+  } = useQuery<Material[]>({
     queryKey: ['/api/materials'],
   });
 
@@ -21,9 +22,10 @@ export default function Home() {
     data: materialDetails,
     isLoading: isMaterialDetailsLoading,
     isError: isMaterialDetailsError
-  } = useQuery({
+  } = useQuery<Material>({
     queryKey: ['/api/materials', selectedMaterial?.id],
     enabled: !!selectedMaterial,
+    queryFn: getQueryFn<Material>({ on401: "throw" }),
   });
 
   // Set the first material as selected on initial load
@@ -63,14 +65,14 @@ export default function Home() {
           />
           
           <MaterialProperties 
-            material={materialDetails || selectedMaterial}
+            material={(materialDetails as Material | null) || selectedMaterial}
             isLoading={isLoading}
           />
         </div>
 
         <div className="lg:col-span-2">
           <StressStrainChart 
-            material={materialDetails}
+            material={materialDetails ? materialDetails : null}
             isLoading={isLoading || !materialDetails}
           />
         </div>
